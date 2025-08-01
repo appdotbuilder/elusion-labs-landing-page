@@ -1,19 +1,25 @@
 
+import { db } from '../db';
+import { roadmapItemsTable } from '../db/schema';
 import { type CreateRoadmapItemInput, type RoadmapItem } from '../schema';
 
-export async function createRoadmapItem(input: CreateRoadmapItemInput): Promise<RoadmapItem> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is to create a new roadmap item in the database
-  // with the provided roadmap information, returning the created item with ID and timestamps.
-  
-  return {
-    id: 1, // Placeholder ID
-    title: input.title,
-    description: input.description,
-    status: input.status,
-    expected_date: input.expected_date || null,
-    priority: input.priority,
-    created_at: new Date(),
-    updated_at: new Date()
-  };
-}
+export const createRoadmapItem = async (input: CreateRoadmapItemInput): Promise<RoadmapItem> => {
+  try {
+    // Insert roadmap item record
+    const result = await db.insert(roadmapItemsTable)
+      .values({
+        title: input.title,
+        description: input.description,
+        status: input.status, // Already has default from Zod schema
+        expected_date: input.expected_date || null,
+        priority: input.priority // Already has default from Zod schema
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Roadmap item creation failed:', error);
+    throw error;
+  }
+};

@@ -1,23 +1,29 @@
 
+import { db } from '../db';
+import { sdkShowcasesTable } from '../db/schema';
 import { type CreateSdkShowcaseInput, type SdkShowcase } from '../schema';
 
-export async function createSdkShowcase(input: CreateSdkShowcaseInput): Promise<SdkShowcase> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is to create a new SDK showcase entry in the database
-  // with the provided SDK information, returning the created SDK showcase with ID and timestamps.
-  
-  return {
-    id: 1, // Placeholder ID
-    name: input.name,
-    version: input.version,
-    description: input.description,
-    install_command: input.install_command,
-    code_example: input.code_example,
-    documentation_url: input.documentation_url,
-    github_url: input.github_url,
-    pypi_url: input.pypi_url,
-    is_featured: input.is_featured,
-    created_at: new Date(),
-    updated_at: new Date()
-  };
-}
+export const createSdkShowcase = async (input: CreateSdkShowcaseInput): Promise<SdkShowcase> => {
+  try {
+    // Insert SDK showcase record
+    const result = await db.insert(sdkShowcasesTable)
+      .values({
+        name: input.name,
+        version: input.version,
+        description: input.description,
+        install_command: input.install_command,
+        code_example: input.code_example,
+        documentation_url: input.documentation_url,
+        github_url: input.github_url,
+        pypi_url: input.pypi_url,
+        is_featured: input.is_featured
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('SDK showcase creation failed:', error);
+    throw error;
+  }
+};

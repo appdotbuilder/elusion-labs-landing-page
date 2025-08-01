@@ -1,17 +1,25 @@
 
+import { db } from '../db';
+import { communityStatsTable } from '../db/schema';
+import { desc } from 'drizzle-orm';
 import { type CommunityStats } from '../schema';
 
-export async function getCommunityStats(): Promise<CommunityStats> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is to fetch the current community statistics from the database
-  // for display in the community section, including GitHub stars, downloads, contributors.
-  
-  return {
-    id: 1,
-    github_stars: 156,
-    total_downloads: 2543,
-    contributors: 8,
-    repositories: 3,
-    updated_at: new Date()
-  };
-}
+export const getCommunityStats = async (): Promise<CommunityStats> => {
+  try {
+    // Get the most recent community stats record
+    const results = await db.select()
+      .from(communityStatsTable)
+      .orderBy(desc(communityStatsTable.updated_at))
+      .limit(1)
+      .execute();
+
+    if (results.length === 0) {
+      throw new Error('No community stats found');
+    }
+
+    return results[0];
+  } catch (error) {
+    console.error('Failed to get community stats:', error);
+    throw error;
+  }
+};

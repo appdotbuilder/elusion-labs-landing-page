@@ -1,37 +1,75 @@
 
+import { db } from '../db';
+import { 
+  heroSectionsTable, 
+  sdkShowcasesTable, 
+  sdkFeaturesTable, 
+  codeComparisonsTable, 
+  communityStatsTable, 
+  roadmapItemsTable 
+} from '../db/schema';
 import { type LandingPageData } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export async function getLandingPageData(): Promise<LandingPageData> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is to fetch all landing page content from the database
-  // including hero section, featured SDKs with features, code comparisons, 
-  // community stats, and roadmap items, returning a complete landing page data object.
-  
-  return {
-    hero: {
-      id: 1,
-      headline: "Open Source SDKs That Developers Actually Want to Use",
-      subheadline: "Simplifying API integrations with clean, type-safe Python SDKs",
-      mission_statement: "Making APIs developer-friendly, one SDK at a time",
-      primary_cta_text: "Explore SDKs",
-      primary_cta_url: "#sdks",
-      secondary_cta_text: "View on GitHub",
-      secondary_cta_url: "https://github.com/elusion-labs",
-      code_snippet: "# Before vs After code example",
-      created_at: new Date(),
-      updated_at: new Date()
-    },
-    featured_sdks: [],
-    sdk_features: [],
-    code_comparisons: [],
-    community_stats: {
-      id: 1,
-      github_stars: 0,
-      total_downloads: 0,
-      contributors: 0,
-      repositories: 0,
-      updated_at: new Date()
-    },
-    roadmap: []
-  };
+  try {
+    // Fetch hero section (get the first/latest one)
+    const heroResults = await db.select()
+      .from(heroSectionsTable)
+      .orderBy(heroSectionsTable.created_at)
+      .limit(1)
+      .execute();
+
+    // Fetch featured SDKs
+    const featuredSdks = await db.select()
+      .from(sdkShowcasesTable)
+      .where(eq(sdkShowcasesTable.is_featured, true))
+      .execute();
+
+    // Fetch all SDK features for featured SDKs
+    const sdkFeatures = featuredSdks.length > 0 
+      ? await db.select()
+          .from(sdkFeaturesTable)
+          .execute()
+      : [];
+
+    // Fetch code comparisons
+    const codeComparisons = await db.select()
+      .from(codeComparisonsTable)
+      .execute();
+
+    // Fetch community stats (get the latest one)
+    const communityStatsResults = await db.select()
+      .from(communityStatsTable)
+      .orderBy(communityStatsTable.updated_at)
+      .limit(1)
+      .execute();
+
+    // Fetch roadmap items
+    const roadmapItems = await db.select()
+      .from(roadmapItemsTable)
+      .execute();
+
+    // Handle case where no hero section exists - throw error as it's required
+    if (heroResults.length === 0) {
+      throw new Error('No hero section found');
+    }
+
+    // Handle case where no community stats exist - throw error as it's required
+    if (communityStatsResults.length === 0) {
+      throw new Error('No community stats found');
+    }
+
+    return {
+      hero: heroResults[0],
+      featured_sdks: featuredSdks,
+      sdk_features: sdkFeatures,
+      code_comparisons: codeComparisons,
+      community_stats: communityStatsResults[0],
+      roadmap: roadmapItems
+    };
+  } catch (error) {
+    console.error('Failed to fetch landing page data:', error);
+    throw error;
+  }
 }
